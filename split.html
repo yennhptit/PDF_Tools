@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Split PDF - PDF Tools</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Split PDF</h1>
+            <nav>
+                <a href="/" class="nav-link">← Back to Home</a>
+            </nav>
+        </header>
+
+        <main class="tool-container">
+            <form id="splitForm" onsubmit="return submitSplitForm(event)">
+                <div class="upload-section">
+                    <div class="upload-area" id="uploadArea">
+                        <input type="file" id="fileInput" name="file" accept=".pdf" required>
+                        <div class="upload-content" id="uploadContent">
+                            <div class="upload-icon">📁</div>
+                            <p>Click to upload or drag and drop your PDF file</p>
+                            <p class="upload-hint">PDF files only</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="options-section">
+                    <h2>Split Options</h2>
+                    
+                    <div class="form-group">
+                        <label for="pageRanges">Page Ranges</label>
+                        <input 
+                            type="text" 
+                            id="pageRanges" 
+                            name="pageRanges"
+                            placeholder="Example: 1,2-3,4-10,5-8"
+                            class="form-input"
+                            required
+                        >
+                        <p class="form-hint">Enter page ranges separated by commas. Use format: page or start-end (e.g., 1,2-3,4-10)</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label>File Naming Option</label>
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="namingOption" value="none" checked onchange="toggleCustomPrefix()">
+                                <span>No prefix (e.g., 1.pdf, 2-3.pdf)</span>
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="namingOption" value="custom" onchange="toggleCustomPrefix()">
+                                <span>Custom prefix</span>
+                            </label>
+                            <div id="customPrefixContainer" class="custom-prefix-container hidden">
+                                <input 
+                                    type="text" 
+                                    id="customPrefix" 
+                                    name="customPrefix"
+                                    placeholder="Example: IELTS"
+                                    class="form-input"
+                                >
+                            </div>
+                            <label class="radio-label">
+                                <input type="radio" name="namingOption" value="original" onchange="toggleCustomPrefix()">
+                                <span>Use original filename</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="action-btn">Split PDF</button>
+                </div>
+            </form>
+
+            <div id="loadingOverlay" class="loading-overlay hidden">
+                <div class="loading-spinner"></div>
+                <p>Processing your PDF...</p>
+            </div>
+
+            <div id="resultsSection" class="results-section hidden">
+                <h2>Download Results</h2>
+                <div id="downloadLinks" class="download-links"></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Minimal JavaScript for UI only
+        const fileInput = document.getElementById('fileInput');
+        const uploadArea = document.getElementById('uploadArea');
+        const uploadContent = document.getElementById('uploadContent');
+        const splitForm = document.getElementById('splitForm');
+
+        // Show file name when selected
+        fileInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                const file = this.files[0];
+                uploadContent.innerHTML = `
+                    <div class="upload-icon">✅</div>
+                    <p><strong>${file.name}</strong></p>
+                    <p class="upload-hint">Size: ${formatFileSize(file.size)}</p>
+                `;
+                uploadArea.style.borderColor = '#4caf50';
+                uploadArea.style.background = '#e8f5e9';
+            }
+        });
+
+        // Click upload area to select file
+        uploadArea.addEventListener('click', function(e) {
+            if (e.target !== fileInput) {
+                fileInput.click();
+            }
+        });
+
+        // Toggle custom prefix input
+        function toggleCustomPrefix() {
+            const customOption = document.querySelector('input[name="namingOption"][value="custom"]');
+            const container = document.getElementById('customPrefixContainer');
+            if (customOption.checked) {
+                container.classList.remove('hidden');
+            } else {
+                container.classList.add('hidden');
+            }
+        }
+
+        // Submit form with fetch API
+        function submitSplitForm(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(splitForm);
+            const fileInput = document.getElementById('fileInput');
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert('Please select a PDF file');
+                return false;
+            }
+            
+            const pageRanges = document.getElementById('pageRanges').value.trim();
+            if (!pageRanges) {
+                alert('Please enter page ranges');
+                return false;
+            }
+            
+            // Show loading
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+            document.getElementById('resultsSection').classList.add('hidden');
+            
+            // Submit form
+            const apiUrl = window.location.port === '5500' || window.location.port === '8080' 
+                ? 'http://localhost:5000/split-pdf' 
+                : '/split-pdf';
+            fetch(apiUrl, {
+                method: 'POST',
+                body: formData
+            })
+            .then(async response => {
+                if (!response.ok) {
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        const err = await response.json();
+                        throw new Error(err.error || 'Server error');
+                    } else {
+                        const text = await response.text();
+                        throw new Error(text || `Server error: ${response.status}`);
+                    }
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (!data.success) {
+                    throw new Error(data.error || 'Unknown error');
+                }
+                
+                // Hide loading
+                document.getElementById('loadingOverlay').classList.add('hidden');
+                
+                // Show results section
+                const resultsSection = document.getElementById('resultsSection');
+                const downloadLinks = document.getElementById('downloadLinks');
+                
+                // Clear previous results
+                downloadLinks.innerHTML = '';
+                
+                // Add ZIP download link
+                const apiBaseUrl = window.location.port === '5500' || window.location.port === '8080' 
+                    ? 'http://localhost:5000' 
+                    : '';
+                const zipLink = document.createElement('a');
+                zipLink.href = `${apiBaseUrl}/download-split-zip/${data.session_id}`;
+                zipLink.className = 'download-link';
+                zipLink.textContent = `📦 Download All (ZIP) - ${data.zip_filename}`;
+                zipLink.style.marginBottom = '20px';
+                zipLink.style.fontSize = '1.1rem';
+                downloadLinks.appendChild(zipLink);
+                
+                // Add separator
+                const separator = document.createElement('div');
+                separator.style.margin = '20px 0';
+                separator.style.borderTop = '2px solid #ddd';
+                downloadLinks.appendChild(separator);
+                
+                // Add individual file download links
+                const filesTitle = document.createElement('h3');
+                filesTitle.textContent = 'Download Individual Files:';
+                filesTitle.style.marginTop = '20px';
+                filesTitle.style.marginBottom = '15px';
+                filesTitle.style.color = '#333';
+                downloadLinks.appendChild(filesTitle);
+                
+                data.files.forEach((file, index) => {
+                    const fileLink = document.createElement('a');
+                    fileLink.href = `${apiBaseUrl}/download-split-file/${data.session_id}/${encodeURIComponent(file.filename)}`;
+                    fileLink.className = 'download-link';
+                    fileLink.textContent = `📄 ${file.filename}`;
+                    fileLink.style.display = 'block';
+                    fileLink.style.marginBottom = '10px';
+                    downloadLinks.appendChild(fileLink);
+                });
+                
+                // Show results section
+                resultsSection.classList.remove('hidden');
+                
+                // Scroll to results
+                resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            })
+            .catch(error => {
+                document.getElementById('loadingOverlay').classList.add('hidden');
+                alert('Error: ' + error.message);
+            });
+            
+            return false;
+        }
+
+        // Format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+    </script>
+</body>
+</html>
+

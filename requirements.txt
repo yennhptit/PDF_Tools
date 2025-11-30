@@ -1,4 +1,6 @@
-Flask
-PyMuPDF
-Pillow
-pikepdf
+Flask==3.0.0
+flask-cors==4.0.0
+PyMuPDF==1.23.8
+Pillow==10.1.0
+pikepdf==10.0.2
+
