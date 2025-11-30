@@ -1,10 +1,10 @@
 # PDF Tools
 
-A modern web application for PDF manipulation with two powerful features: PDF splitting and PDF compression.
+A modern web application for PDF splitting. Split your PDF files into smaller PDFs based on page ranges.
 
 ## Features
 
-### 1. Split PDF
+### Split PDF
 - Split PDF files into smaller PDFs based on page ranges
 - Support for single pages and page ranges (e.g., `1,2-3,4-10,5-8`)
 - Three naming options:
@@ -15,14 +15,6 @@ A modern web application for PDF manipulation with two powerful features: PDF sp
 - Individual file download links available
 - Loading states during file upload and processing
 - Display selected file name in upload area
-
-### 2. Compress PDF
-- Reduce PDF file size while maintaining quality
-- Compress images in PDF using JPEG compression
-- Optimize PDF structure with pikepdf
-- Display compression statistics
-- Preview compressed PDF in browser
-- Loading states with progress bar
 
 ## Installation
 
@@ -54,29 +46,23 @@ The server will run on `http://localhost:5000`
 
 1. **Start the Python server** (see above)
 2. Open your browser and go to `http://localhost:5000`
-3. Choose either "Split PDF" or "Compress PDF"
+3. Click "Split PDF"
 
 #### Split PDF
-1. Click "Split PDF" from home page
-2. Upload your PDF file (file name will be displayed)
-3. Enter page ranges (e.g., `1,2-3,4-10`)
-4. Choose file naming option
-5. Click "Split PDF"
-6. Download ZIP file or individual PDF files
-
-#### Compress PDF
-1. Click "Compress PDF" from home page
-2. Upload your PDF file (file name will be displayed)
-3. Click "Compress PDF"
-4. View compressed PDF and download
+1. Upload your PDF file (file name will be displayed)
+2. Enter page ranges (e.g., `1,2-3,4-10`)
+3. Choose file naming option:
+   - No prefix
+   - Custom prefix (enter your prefix)
+   - Original filename
+4. Click "Split PDF"
+5. Download ZIP file or individual PDF files
 
 ## Technologies Used
 
 - **Python 3.7+** - Backend server
 - **Flask** - Python web framework
 - **PyMuPDF (fitz)** - PDF manipulation library
-- **Pillow (PIL)** - Image processing library
-- **pikepdf** - PDF optimization library
 - **HTML5** - Structure and semantic markup
 - **CSS3** - Modern styling
 - **JavaScript** - UI interactions
@@ -88,7 +74,6 @@ PDF_Toos/
 ├── app.py              # Main Flask application
 ├── index.html          # Home page
 ├── split.html          # Split PDF page
-├── compress.html       # Compress PDF page
 ├── styles.css          # Shared stylesheet
 ├── requirements.txt    # Python dependencies
 ├── start_server.bat    # Windows startup script
