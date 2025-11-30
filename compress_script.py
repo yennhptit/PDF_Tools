@@ -21,7 +21,6 @@ def compress_images(input_file, temp_file, quality=50, max_dim=1500):
         doc.save(temp_file)
         doc.close()
         return
-
     img_counter = 0
     for page_index in range(len(doc)):
         page = doc[page_index]
@@ -32,7 +31,6 @@ def compress_images(input_file, temp_file, quality=50, max_dim=1500):
             base_image = doc.extract_image(xref)
             image_bytes = base_image["image"]
             img_obj = Image.open(BytesIO(image_bytes))
-
             if img_obj.mode == "RGBA":
                 background = Image.new("RGB", img_obj.size, (255, 255, 255))
                 background.paste(img_obj, mask=img_obj.split()[3])
@@ -45,17 +43,13 @@ def compress_images(input_file, temp_file, quality=50, max_dim=1500):
                 img_obj = img_obj.convert("RGB")
             elif img_obj.mode != "RGB":
                 img_obj = img_obj.convert("RGB")
-
             if img_obj.width > max_dim or img_obj.height > max_dim:
                 img_obj.thumbnail((max_dim, max_dim), Image.LANCZOS)
-
             if base_image["ext"].lower() != "jpeg":
                 buf = BytesIO()
                 img_obj.save(buf, format="JPEG", quality=quality, optimize=True, progressive=True)
                 doc.update_stream(xref, buf.getvalue())
-
             print_progress("Compressing images", img_counter, total_images)
-
     doc.save(temp_file, garbage=1, deflate=True)
     doc.close()
 
@@ -97,10 +91,8 @@ def compress_with_ghostscript(input_file, output_file, quality="ebook"):
 def smallpdf_style_compress(input_file, output_file, quality=50, use_ghostscript=True, gs_quality="ebook"):
     temp_file1 = "temp_compress1.pdf"
     temp_file2 = "temp_compress2.pdf"
-
     compress_images(input_file, temp_file1, quality)
     optimize_pdf(temp_file1, temp_file2)
-
     if use_ghostscript:
         if compress_with_ghostscript(temp_file2, output_file, gs_quality):
             if os.path.exists(temp_file1): os.remove(temp_file1)

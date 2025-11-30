@@ -21,9 +21,7 @@ def compress_pdf():
     input_path = os.path.join(UPLOAD_FOLDER, file.filename)
     output_path = os.path.join(OUTPUT_FOLDER, f"compressed_{file.filename}")
     file.save(input_path)
-
     smallpdf_style_compress(input_path, output_path, quality=50, use_ghostscript=True, gs_quality="ebook")
-
     return send_file(output_path, as_attachment=True)
 
 if __name__ == "__main__":
