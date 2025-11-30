@@ -50,17 +50,23 @@ def parse_page_ranges(input_str, total_pages):
 # API Routes
 @app.route('/split-pdf', methods=['POST'])
 def split_pdf():
+    print(f"[*] Split PDF request received")
     try:
         if 'file' not in request.files:
+            print("[ERROR] No file in request")
             return jsonify({'error': 'No file provided'}), 400
         
         file = request.files['file']
         if file.filename == '':
+            print("[ERROR] Empty filename")
             return jsonify({'error': 'No file selected'}), 400
         
+        print(f"[*] Processing file: {file.filename}")
         page_ranges_str = request.form.get('pageRanges', '').strip()
         naming_option = request.form.get('namingOption', 'none')
         custom_prefix = request.form.get('customPrefix', '').strip()
+        
+        print(f"[*] Page ranges: {page_ranges_str}, Naming: {naming_option}")
         
         if not page_ranges_str:
             return jsonify({'error': 'Please enter page ranges'}), 400
@@ -72,9 +78,12 @@ def split_pdf():
             file.save(input_path)
         
         try:
+            print(f"[*] Opening PDF: {input_path}")
             doc = fitz.open(input_path)
             total_pages = len(doc)
+            print(f"[*] Total pages: {total_pages}")
             ranges = parse_page_ranges(page_ranges_str, total_pages)
+            print(f"[*] Parsed {len(ranges)} ranges")
             
             if naming_option == 'custom':
                 if not custom_prefix:
@@ -120,6 +129,8 @@ def split_pdf():
                 for file_info in output_files:
                     zipf.write(file_info['path'], file_info['filename'])
             
+            # For Vercel/serverless: return ZIP file directly instead of using sessions
+            # Store session info temporarily for download links (works for short time)
             session_id = str(uuid.uuid4())
             split_sessions[session_id] = {
                 'temp_dir': temp_dir,
@@ -134,7 +145,12 @@ def split_pdf():
             except:
                 pass
             
+            # Return ZIP file directly for immediate download
+            # Also return file list for individual downloads
             file_list = [{'filename': f['filename'], 'range': f['filename'].replace('.pdf', '')} for f in output_files]
+            
+            # Check if we should return ZIP directly or JSON with links
+            # For Vercel, return JSON with download links
             return jsonify({
                 'success': True,
                 'session_id': session_id,
@@ -153,8 +169,12 @@ def split_pdf():
             raise
                 
     except ValueError as e:
+        print(f"[ERROR] ValueError: {str(e)}")
         return jsonify({'error': str(e)}), 400
     except Exception as e:
+        print(f"[ERROR] Exception: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 # Download routes
@@ -178,7 +198,10 @@ def download_split_file(session_id, filename):
 
 @app.route('/download-split-zip/<session_id>', methods=['GET'])
 def download_split_zip(session_id):
+    print(f"[*] ZIP download request: session={session_id}")
+    print(f"[*] Available sessions: {list(split_sessions.keys())}")
     if session_id not in split_sessions:
+        print(f"[ERROR] Session {session_id} not found")
         return jsonify({'error': 'Session not found or expired'}), 404
     
     session = split_sessions[session_id]
@@ -227,6 +250,9 @@ def cleanup_old_sessions():
 def health():
     cleanup_old_sessions()
     return jsonify({'status': 'ok'}), 200
+
+# For Vercel deployment
+handler = app
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000, host='0.0.0.0')

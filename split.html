@@ -148,8 +148,9 @@
             document.getElementById('loadingOverlay').classList.remove('hidden');
             document.getElementById('resultsSection').classList.add('hidden');
             
-            // Submit form
-            const apiUrl = window.location.port === '5500' || window.location.port === '8080' 
+            // Submit form - use relative URL for production, absolute for local dev
+            const apiUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
+                && (window.location.port === '5500' || window.location.port === '8080')
                 ? 'http://localhost:5000/split-pdf' 
                 : '/split-pdf';
             fetch(apiUrl, {
@@ -184,8 +185,9 @@
                 // Clear previous results
                 downloadLinks.innerHTML = '';
                 
-                // Add ZIP download link
-                const apiBaseUrl = window.location.port === '5500' || window.location.port === '8080' 
+                // Add ZIP download link - use relative URL for production
+                const apiBaseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                    && (window.location.port === '5500' || window.location.port === '8080')
                     ? 'http://localhost:5000' 
                     : '';
                 const zipLink = document.createElement('a');
@@ -228,7 +230,8 @@
             })
             .catch(error => {
                 document.getElementById('loadingOverlay').classList.add('hidden');
-                alert('Error: ' + error.message);
+                console.error('Split error:', error);
+                alert('Error: ' + error.message + '\n\nPlease check the browser console for more details.');
             });
             
             return false;
